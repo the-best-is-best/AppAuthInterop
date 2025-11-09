@@ -1,5 +1,5 @@
 {
-  "originHash" : "4b0d24e4d9a8c69b32b02715d961abf83d6064778294f4aefc552191c8cb18a1",
+  "originHash" : "1edf1a00a415f17c986f2201792dc028e012036a381d5b686e260a4cd5af94db",
   "pins" : [
     {
       "identity" : "appauth-ios",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/the-best-is-best/IOSCrypto",
       "state" : {
-        "revision" : "6c57d1fb60d2a95d44e1a3fd0a2caeb0a5193e34",
-        "version" : "1.0.1"
+        "revision" : "4d57eb75ef53ed7457a3959d531a6edecc9ded74",
+        "version" : "1.1.0"
       }
     }
   ],

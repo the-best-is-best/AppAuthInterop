@@ -2,15 +2,15 @@
 import PackageDescription
 
 let package = Package(
-    name: "AppAuthIntrop",
+    name: "AppAuthInterop",
     defaultLocalization: "en",
     platforms: [
         .iOS(.v13)  // يدعم iOS فقط
     ],
     products: [
         .library(
-            name: "AppAuthIntrop",
-            targets: ["AppAuthIntrop"]
+            name: "AppAuthInterop",
+            targets: ["AppAuthInterop"]
         )
     ],
     dependencies: [
@@ -20,18 +20,18 @@ let package = Package(
         ),
         .package(
             url: "https://github.com/the-best-is-best/IOSCrypto",
-            from: "1.0.1"
+            from: "1.1.0"
         ),
     ],
     targets: [
         .target(
-            name: "AppAuthIntrop",
+            name: "AppAuthInterop",
             dependencies: [
                 .product(name: "AppAuth", package: "AppAuth-iOS"),
-                .product(name: "kmmcrypto", package: "IOSCrypto"),
+                .product(name: "IOSCrypto", package: "IOSCrypto"),
 
             ],
-            path: "Sources/AppAuthIntrop",  // تأكد من المسار الصحيح
+            path: "Sources/AppAuthInterop",  // تأكد من المسار الصحيح
             resources: [],
 
             swiftSettings: [
