@@ -22,7 +22,8 @@ public class KAuthManager: NSObject {
     private var service: String?
     private var group: String?
     private var openId: KOpenIdConfig?
-    
+    private var isLoadingConfiguration = false
+
     // MARK: - Public Properties
     @objc public var accessToken: String? {
         return authState?.lastTokenResponse?.accessToken
@@ -45,34 +46,43 @@ public class KAuthManager: NSObject {
             return config
         }
 
-        guard let discoveryUrl = openId?.discoveryUrl,
-              let issuer = URL(string: discoveryUrl) else {
-            throw NSError(
-                domain: "KAuthManager",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Invalid Discovery URL"]
-            )
+        while isLoadingConfiguration {
+            try await Task.sleep(nanoseconds: 100_000_000)
+            if let config = configuration {
+                return config
+            }
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
+        isLoadingConfiguration = true
+        defer { isLoadingConfiguration = false }
+
+        guard let discoveryUrl = openId?.discoveryUrl,
+              let issuer = URL(string: discoveryUrl) else {
+            throw NSError(domain: "KAuthManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid Discovery URL"])
+        }
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             OIDAuthorizationService.discoverConfiguration(forIssuer: issuer) { config, error in
                 Task { @MainActor in
                     if let error = error {
                         continuation.resume(throwing: error)
                     } else if let config = config {
                         self.configuration = config
-                        continuation.resume(returning: config)
+                        continuation.resume()
                     } else {
-                        continuation.resume(throwing: NSError(
-                            domain: "KAuthManager",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Configuration missing"]
-                        ))
+                        continuation.resume(throwing: NSError(domain: "KAuthManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Configuration missing"]))
                     }
                 }
             }
         }
+
+        guard let config = configuration else {
+            throw NSError(domain: "KAuthManager", code: -1, userInfo: [NSLocalizedDescriptionKey: "Configuration not set after loading"])
+        }
+
+        return config
     }
+
 
     // MARK: - Login
     @objc public func login(_ completion: @escaping (_ success: AuthTokens?, _ error: String?) -> Void) {
