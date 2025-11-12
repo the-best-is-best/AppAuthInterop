@@ -5,7 +5,8 @@ let package = Package(
     name: "AppAuthInterop",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v13)  // يدعم iOS فقط
+        .iOS(.v13),
+        .macOS(.v10_15)
     ],
     products: [
         .library(
@@ -36,10 +37,10 @@ let package = Package(
 
             swiftSettings: [
                 .define("PLATFORM_IOS", .when(platforms: [.iOS]))
-                // .unsafeFlags([
-                //     "-emit-objc-header",
-                //     "-emit-objc-header-path", "./Headers/KAppAuthIntrop-Swift.h",
-                // ]),
+//                 .unsafeFlags([
+//                     "-emit-objc-header",
+//                     "-emit-objc-header-path", "./Headers/KAppAuthInterop-Swift.h",
+//                 ]),
             ]
         )
     ]
