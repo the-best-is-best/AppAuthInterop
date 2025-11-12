@@ -19,8 +19,8 @@ let package = Package(
             from: "2.0.0"
         ),
         .package(
-            url: "https://github.com/the-best-is-best/IOSCrypto",
-            from: "1.1.0"
+            url: "https://github.com/the-best-is-best/IOSCryptoInterop.git",
+            from: "1.0.0"
         ),
     ],
     targets: [
@@ -28,7 +28,7 @@ let package = Package(
             name: "AppAuthInterop",
             dependencies: [
                 .product(name: "AppAuth", package: "AppAuth-iOS"),
-                .product(name: "IOSCrypto", package: "IOSCrypto"),
+                .product(name: "IOSCryptoInterop", package: "IOSCryptoInterop"),
 
             ],
             path: "Sources/AppAuthInterop",  // تأكد من المسار الصحيح
