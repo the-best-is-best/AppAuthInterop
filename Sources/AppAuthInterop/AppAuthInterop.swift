@@ -10,9 +10,8 @@ import Foundation
 import IOSCryptoInterop
 
 @objcMembers
-@MainActor
 public class KAuthManager: NSObject {
-
+    @MainActor
     public static let shared = KAuthManager()
 
     // MARK: - Private Properties
@@ -45,35 +44,42 @@ public class KAuthManager: NSObject {
             return config
         }
 
-        guard let discoveryUrl = openId?.discoveryUrl,
+        guard let discoveryUrl = await openId?.discoveryUrl,
               let issuer = URL(string: discoveryUrl) else {
-            throw NSError(
-                domain: "KAuthManager",
-                code: -1,
-                userInfo: [NSLocalizedDescriptionKey: "Invalid Discovery URL"]
-            )
+            throw NSError(domain: "KAuthManager",
+                          code: -1,
+                          userInfo: [NSLocalizedDescriptionKey: "Invalid Discovery URL"])
         }
 
-        return try await withCheckedThrowingContinuation { continuation in
-            OIDAuthorizationService.discoverConfiguration(forIssuer: issuer) { config, error in
-                Task { @MainActor in
-                    if let error = error {
-                        continuation.resume(throwing: error)
-                    } else if let config = config {
-                        self.configuration = config
-                        continuation.resume(returning: config)
-                    } else {
-                        continuation.resume(throwing: NSError(
-                            domain: "KAuthManager",
-                            code: -1,
-                            userInfo: [NSLocalizedDescriptionKey: "Configuration missing"]
-                        ))
-                    }
+        // 1. استدعي دالة الاكتشاف بدون انتظار مباشر config
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            OIDAuthorizationService.discoverConfiguration(forIssuer: issuer) { [weak self] config, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
                 }
+
+                guard let safeConfig = config else {
+                    continuation.resume(throwing: NSError(domain: "KAuthManager",
+                                                         code: -1,
+                                                         userInfo: [NSLocalizedDescriptionKey: "Configuration missing"]))
+                    return
+                }
+
+                // 2. حدث الخاصية داخل MainActor
+                self?.configuration = safeConfig
+                continuation.resume(returning: ())
             }
         }
+
+        // 3. رجع الخاصية الآن بعد أن تم تحديثها
+        return configuration!
     }
 
+
+
+    
+    @MainActor
     // MARK: - Login
     @objc public func login(_ completion: @escaping (_ success: AuthTokens?, _ error: String?) -> Void) {
         Task {
@@ -132,7 +138,9 @@ public class KAuthManager: NSObject {
 
                 // We're already on MainActor here due to the class being @MainActor
                 self.authState = authState
-                await self.saveAuthState()
+                Task { @MainActor in
+                    await self.saveAuthState()
+                 }
                 
                 let res = authState.lastTokenResponse
                 let tokens = AuthTokens(
@@ -148,7 +156,7 @@ public class KAuthManager: NSObject {
             }
         }
     }
-
+    @MainActor
     // MARK: - Logout
     @objc public func logout(_ completion: @escaping (Bool, String?) -> Void) {
         Task {
@@ -209,6 +217,7 @@ public class KAuthManager: NSObject {
         }
     }
 
+    @MainActor
     // MARK: - Token Management
     @objc public func refreshAccessToken(_ completion: @escaping (_ success: AuthTokens?, _ error: String?) -> Void) {
         Task {
@@ -251,6 +260,7 @@ public class KAuthManager: NSObject {
     }
 
     @objc(getAuthTokens:)
+    @MainActor
     public func getAuthTokens(completion: @escaping (AuthTokens?) -> Void) {
         Task {
             await loadAuthState()
@@ -287,6 +297,7 @@ public class KAuthManager: NSObject {
     }
 
     // MARK: - User Info
+    @MainActor
     @objc public func getUserInfo(_ completion: @escaping ([String: Any]?, String?) -> Void) {
         Task {
             await loadAuthState()
