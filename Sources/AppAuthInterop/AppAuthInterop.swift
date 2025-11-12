@@ -38,13 +38,14 @@ public class KAuthManager: NSObject {
         self.openId = client
     }
 
+    @MainActor
     // MARK: - Configuration
     private func loadConfiguration() async throws -> OIDServiceConfiguration {
         if let config = configuration {
             return config
         }
 
-        guard let discoveryUrl = await openId?.discoveryUrl,
+        guard let discoveryUrl =  openId?.discoveryUrl,
               let issuer = URL(string: discoveryUrl) else {
             throw NSError(domain: "KAuthManager",
                           code: -1,
