@@ -7,7 +7,7 @@
 
 import AppAuth
 import Foundation
-import IOSCrypto
+import IOSCryptoInterop
 
 @objcMembers
 @MainActor
