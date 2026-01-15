@@ -14,7 +14,7 @@ public final class KOpenIdConfig: NSObject {
     public var discoveryUrl:String
     public var clientId:String
     public var redirectUrl:String
-    public var scope: String
+    public var scope: [String]
     public var postLogoutRedirectURL:String
 
 
