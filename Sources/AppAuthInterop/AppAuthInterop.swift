@@ -38,7 +38,7 @@ public class KAuthManager: NSObject {
 
     @MainActor
     // MARK: - Configuration
-    private func loadConfiguration(openId: KOpenIdConfig) async throws -> OIDServiceConfiguration {
+    private func loadConfiguration(_ openId: KOpenIdConfig) async throws -> OIDServiceConfiguration {
         if let config = configuration {
             return config
         }
