@@ -98,13 +98,13 @@ public class KAuthManager: NSObject {
 
                 let clientID = openId.clientId
                 let scope =  openId.scope
-                let scopes = scope.split(separator: " ").map { String($0) }
+               
 
                 let request = OIDAuthorizationRequest(
                     configuration: config,
                     clientId: clientID,
                     clientSecret: nil,
-                    scopes: scopes,
+                    scopes: scope,
                     redirectURL: redirectURI,
                     responseType: OIDResponseTypeCode,
                     additionalParameters: nil
