@@ -43,12 +43,13 @@ public class KAuthManager: NSObject {
             return config
         }
 
-        guard let discoveryUrl =  openId.discoveryUrl,
-              let issuer = URL(string: discoveryUrl) else {
+        let discoveryUrl = openId.discoveryUrl
+        guard let issuer = URL(string: discoveryUrl) else {
             throw NSError(domain: "KAuthManager",
                           code: -1,
                           userInfo: [NSLocalizedDescriptionKey: "Invalid Discovery URL"])
         }
+
 
         // 1. استدعي دالة الاكتشاف بدون انتظار مباشر config
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -88,7 +89,7 @@ public class KAuthManager: NSObject {
                     return
                 }
 
-                let config = try await loadConfiguration()
+                let config = try await loadConfiguration(openId)
                 
                 guard let redirectURI = URL(string: openId.redirectUrl) else {
                     await MainActor.run { completion(nil, "Invalid redirect URL") }
@@ -96,7 +97,7 @@ public class KAuthManager: NSObject {
                 }
 
                 let clientID = openId.clientId
-                let scope  openId.scope
+                let scope =  openId.scope
                 let scopes = scope.split(separator: " ").map { String($0) }
 
                 let request = OIDAuthorizationRequest(
@@ -172,7 +173,7 @@ public class KAuthManager: NSObject {
                     return
                 }
 
-                let config = try await loadConfiguration()
+                let config = try await loadConfiguration(openId)
                 
                 guard let logoutRedirectURI = URL(string: openId.postLogoutRedirectURL) else {
                     await MainActor.run { completion(false, "Invalid logout redirect URL") }
