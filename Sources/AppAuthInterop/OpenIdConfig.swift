@@ -19,7 +19,7 @@ public final class KOpenIdConfig: NSObject {
 
 
     
-    public init(discoveryUrl: String, clientId: String, redirectUrl: String, scope: String, postLogoutRedirectURL: String) {
+    public init(discoveryUrl: String, clientId: String, redirectUrl: String, scope: [String], postLogoutRedirectURL: String) {
         self.discoveryUrl = discoveryUrl
         self.clientId = clientId
         self.redirectUrl = redirectUrl
