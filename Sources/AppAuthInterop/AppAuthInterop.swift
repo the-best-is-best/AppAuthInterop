@@ -20,7 +20,6 @@ public class KAuthManager: NSObject {
     private var configuration: OIDServiceConfiguration?
     private var service: String?
     private var group: String?
-    private var openId: KOpenIdConfig?
     
     // MARK: - Public Properties
     @objc public var accessToken: String? {
@@ -32,25 +31,25 @@ public class KAuthManager: NSObject {
     }
 
     // MARK: - Initialization
-    @objc public func initCrypto(service: String, group: String, client: KOpenIdConfig) {
+    @objc public func initCrypto(service: String, group: String) {
         self.service = service
         self.group = group
-        self.openId = client
     }
 
     @MainActor
     // MARK: - Configuration
-    private func loadConfiguration() async throws -> OIDServiceConfiguration {
+    private func loadConfiguration(_ openId: KOpenIdConfig) async throws -> OIDServiceConfiguration {
         if let config = configuration {
             return config
         }
 
-        guard let discoveryUrl =  openId?.discoveryUrl,
-              let issuer = URL(string: discoveryUrl) else {
+        let discoveryUrl = openId.discoveryUrl
+        guard let issuer = URL(string: discoveryUrl) else {
             throw NSError(domain: "KAuthManager",
                           code: -1,
                           userInfo: [NSLocalizedDescriptionKey: "Invalid Discovery URL"])
         }
+
 
         // 1. استدعي دالة الاكتشاف بدون انتظار مباشر config
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
@@ -82,7 +81,7 @@ public class KAuthManager: NSObject {
     
     @MainActor
     // MARK: - Login
-    @objc public func login(_ completion: @escaping (_ success: AuthTokens?, _ error: String?) -> Void) {
+    @objc public func login(openId: KOpenIdConfig , _ completion: @escaping (_ success: AuthTokens?, _ error: String?) -> Void) {
         Task {
             do {
                 guard let presentingVC =  KAuthPresenter.topViewController() else {
@@ -90,22 +89,22 @@ public class KAuthManager: NSObject {
                     return
                 }
 
-                let config = try await loadConfiguration()
+                let config = try await loadConfiguration(openId)
                 
-                guard let redirectURI = URL(string: self.openId!.redirectUrl) else {
+                guard let redirectURI = URL(string: openId.redirectUrl) else {
                     await MainActor.run { completion(nil, "Invalid redirect URL") }
                     return
                 }
 
-                let clientID = self.openId!.clientId
-                let scope = self.openId!.scope
-                let scopes = scope.split(separator: " ").map { String($0) }
+                let clientID = openId.clientId
+                let scope =  openId.scope
+               
 
                 let request = OIDAuthorizationRequest(
                     configuration: config,
                     clientId: clientID,
                     clientSecret: nil,
-                    scopes: scopes,
+                    scopes: scope,
                     redirectURL: redirectURI,
                     responseType: OIDResponseTypeCode,
                     additionalParameters: nil
@@ -157,9 +156,10 @@ public class KAuthManager: NSObject {
             }
         }
     }
+   
     @MainActor
     // MARK: - Logout
-    @objc public func logout(_ completion: @escaping (Bool, String?) -> Void) {
+    @objc public func logout(openId: KOpenIdConfig ,_ completion: @escaping (Bool, String?) -> Void) {
         Task {
             do {
                await loadAuthState()
@@ -174,9 +174,9 @@ public class KAuthManager: NSObject {
                     return
                 }
 
-                let config = try await loadConfiguration()
+                let config = try await loadConfiguration(openId)
                 
-                guard let logoutRedirectURI = URL(string: self.openId!.postLogoutRedirectURL) else {
+                guard let logoutRedirectURI = URL(string: openId.postLogoutRedirectURL) else {
                     await MainActor.run { completion(false, "Invalid logout redirect URL") }
                     return
                 }
