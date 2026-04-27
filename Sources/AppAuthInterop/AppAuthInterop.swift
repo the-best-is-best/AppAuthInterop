@@ -10,8 +10,8 @@ import Foundation
 import IOSCryptoInterop
 
 @objcMembers
+@MainActor
 public class KAuthManager: NSObject {
-    @MainActor
     public static let shared = KAuthManager()
 
     // MARK: - Private Properties
@@ -110,37 +110,43 @@ public class KAuthManager: NSObject {
                     additionalParameters: nil
                 )
 
-                let authState = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<OIDAuthState, Error>) in
-                    // Use a local variable to avoid capturing self
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     let localRequest = request
                     let localPresentingVC = presentingVC
                     
                     self.currentFlow = OIDAuthState.authState(
                         byPresenting: localRequest,
                         presenting: localPresentingVC
-                    ) { authState, error in
-                        // Ensure we're on MainActor when handling the result
+                    ) { [weak self] authState, error in
                         Task { @MainActor in
                             if let error = error {
                                 continuation.resume(throwing: error)
-                            } else if let authState = authState {
-                                continuation.resume(returning: authState)
-                            } else {
+                                return
+                            }
+                            
+                            guard let authState = authState else {
                                 continuation.resume(throwing: NSError(
                                     domain: "KAuthManager",
                                     code: -1,
                                     userInfo: [NSLocalizedDescriptionKey: "Auth state missing"]
                                 ))
+                                return
                             }
+                            
+                            self?.authState = authState
+                            continuation.resume(returning: ())
                         }
                     }
                 }
+                
 
                 // We're already on MainActor here due to the class being @MainActor
-                self.authState = authState
-                Task { @MainActor in
-                    await self.saveAuthState()
-                 }
+                guard let authState = self.authState else {
+                    completion(nil, "Auth state missing after login")
+                    return
+                }
+
+                await self.saveAuthState()
                 
                 let res = authState.lastTokenResponse
                 let tokens = AuthTokens(
