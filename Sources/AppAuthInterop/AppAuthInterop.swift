@@ -425,7 +425,7 @@ public class KAuthManager: NSObject {
         }
     }
 
-    private func clearAuthState() {
+  public func clearAuthState() {
         authState = nil
         guard let service = self.service, let group = self.group else { return }
         
